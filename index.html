@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sükûn Voice Studio</title>
+<meta name="description" content="Ruhige KI-Voice-overs auf Deutsch und Türkisch für Motion-Graphics-Videos.">
+<meta name="theme-color" content="#0d1220">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:ital,wght@0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one calm column like a take sheet in a recording booth — sticky header, scenes as takes, transport bar at the bottom. Palette after İznik tiles: night ink, turquoise, cobalt, coral. */
+:root{
+  --bg:#0d1220; --surface:#151c2c; --surface-2:#1c2538; --line:#2a3550;
+  --fg:#ebe7de; --muted:#98a1b3; --accent:#4cc3b5; --accent-ink:#04211e;
+  --cobalt:#7b9be8; --coral:#e8766a; --ok:#7bd39a; --shadow:0 10px 30px rgba(0,0,0,.35);
+  --font-display:"Spectral",Georgia,"Times New Roman",serif;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:14px; color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#eef1f5; --surface:#ffffff; --surface-2:#f3f5f9; --line:#d6dce7;
+    --fg:#131c2c; --muted:#596477; --accent:#0d877c; --accent-ink:#ffffff;
+    --cobalt:#2d56b6; --coral:#c2473a; --ok:#2c8650; --shadow:0 10px 30px rgba(20,30,50,.12); color-scheme:light; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font:15px/1.5 var(--font-ui);-webkit-text-size-adjust:100%;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* Header */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:10px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.brand svg{width:26px;height:26px}
+.brand b{font:600 21px/1 var(--font-display);letter-spacing:.01em}
+.proj{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:left}
+.proj span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj i{font-style:normal;color:var(--muted)}
+.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px;flex:0 0 auto}
+.seg button{border:0;background:none;padding:6px 10px;border-radius:7px;font-weight:600;font-size:13px;letter-spacing:.06em;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;border:0;background:none;padding:7px 10px;border-radius:999px;color:var(--muted);font-weight:500;font-size:14px}
+.tabs button[aria-selected="true"]{background:var(--surface-2);color:var(--fg)}
+
+/* General */
+main{padding-block:14px 24px}
+.view{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.card h2{font:600 18px/1.25 var(--font-display);margin:0 0 4px;text-wrap:balance}
+.card p{margin:0 0 10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stack{display:flex;flex-direction:column;gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
+label.f > span{letter-spacing:.02em}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;color:var(--fg);min-width:0}
+textarea{resize:vertical;line-height:1.5}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 55%,calc(100% - 11px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);font-weight:500;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ghost{background:none}
+.btn.danger{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 45%,var(--line))}
+.btn.sm{min-height:34px;padding:5px 10px;font-size:13px}
+.hint{font-size:13px;color:var(--muted)}
+.note{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted)}
+.note.warn{border-color:color-mix(in srgb,var(--coral) 55%,var(--line));color:var(--fg)}
+
+/* Status line */
+.statusline{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.statusline b{color:var(--fg);font-weight:500}
+
+/* Sound panel */
+details.card summary{list-style:none;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font:600 16px var(--font-display)}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::after{content:"＋";font-family:var(--font-ui);color:var(--muted)}
+details.card[open] summary::after{content:"－"}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 20px;margin-top:12px}
+.sl{display:flex;flex-direction:column;gap:4px}
+.sl header{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.sl header output{color:var(--fg);font-family:var(--font-mono)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+
+/* Scenes */
+#sceneList{display:flex;flex-direction:column;gap:10px}
+.scene{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px}
+.scene.playing{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.scene-head{display:flex;align-items:center;gap:8px}
+.num{font:500 22px/1 var(--font-display);color:var(--muted);min-width:30px;font-variant-numeric:tabular-nums}
+.scene .mood{width:auto;flex:0 0 auto;padding:5px 26px 5px 10px;font-size:13px;border-radius:999px}
+.scene-head .grow{flex:1}
+.chip{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.chip.ready{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.chip.stale,.chip.cut{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 50%,var(--line))}
+.chip.busy{color:var(--accent);border-color:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion: reduce){.chip.busy{animation:none}}
+.iconbtn{border:0;background:none;color:var(--muted);width:34px;height:34px;border-radius:8px;font-size:18px;line-height:1}
+.scene textarea{background:transparent;border:1px solid transparent;padding:6px 4px;font-size:16px;line-height:1.5;resize:none;overflow:hidden}
+.scene textarea:focus{border-color:var(--line);background:var(--surface-2)}
+.scene textarea::placeholder{color:var(--muted);font-style:italic}
+.wave{width:100%;height:38px;display:block}
+.scene-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.scene-ctrl .pause{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-left:auto}
+.scene-ctrl .pause input{width:64px;padding:5px 8px;text-align:right}
+.menu{display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid var(--line);padding-top:8px}
+.add-row{display:flex;flex-wrap:wrap;gap:8px}
+.empty{text-align:center;padding:26px 14px}
+.empty h2{font:600 19px var(--font-display);margin:0 0 6px}
+
+/* Lists */
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:grid;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px}
+.item .row > *{flex:1 1 140px}
+.pitem{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.pitem.cur{border-color:var(--accent)}
+.pitem .meta{min-width:0}
+.pitem .meta b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.gen-result{display:flex;flex-direction:column;gap:8px}
+.gen-result ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.gen-result li span{display:block;color:var(--muted);font-size:13px}
+
+/* Action bar */
+.actionbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.actionbar .wrap{display:flex;gap:8px;padding-block:10px}
+.actionbar .btn{flex:1 1 0;min-height:46px}
+.actionbar .btn.primary{flex:1.4 1 0}
+
+/* Dialogs */
+dialog{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:18px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 40px);box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(5,8,15,.6)}
+.dlg{padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto;max-height:calc(100dvh - 40px)}
+.dlg header{display:flex;justify-content:space-between;align-items:center}
+.dlg h2{font:600 19px var(--font-display);margin:0}
+.checks{display:flex;flex-direction:column;gap:8px}
+.checks label{display:flex;gap:10px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px}
+.checks input{accent-color:var(--accent);width:18px;height:18px}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.summary div{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.summary b{display:block;font-family:var(--font-mono);font-size:17px}
+.summary span{font-size:12px;color:var(--muted)}
+
+/* Toast */
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:40;width:min(560px,calc(100vw - 24px));display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.t{pointer-events:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;box-shadow:var(--shadow);display:flex;gap:10px;align-items:flex-start}
+.t.err{border-color:color-mix(in srgb,var(--coral) 60%,var(--line))}
+.t .tx{flex:1;min-width:0}
+.t b{display:block}
+.t .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="star" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="7.5" y="7.5" width="17" height="17" rx="1"/><rect x="7.5" y="7.5" width="17" height="17" rx="1" transform="rotate(45 16 16)"/></g><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12.5 14v4M16 12v8M19.5 14.5v3"/></g></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand" style="color:var(--accent)"><svg><use href="#star"/></svg><b style="color:var(--fg)">Sükûn</b></div>
+    <button class="proj" id="projBtn" type="button" aria-label="Projekt wählen"><span id="projName">Projekt</span><i>▾</i></button>
+    <div class="seg" role="group" aria-label="Sprache">
+      <button type="button" data-lang="de" aria-pressed="true">DE</button>
+      <button type="button" data-lang="tr" aria-pressed="false">TR</button>
+    </div>
+  </div>
+  <nav class="wrap tabs" role="tablist" aria-label="Bereiche">
+    <button type="button" role="tab" data-tab="scenes" aria-selected="true">Szenen</button>
+    <button type="button" role="tab" data-tab="script" aria-selected="false">Skript</button>
+    <button type="button" role="tab" data-tab="dict" aria-selected="false">Aussprache</button>
+    <button type="button" role="tab" data-tab="settings" aria-selected="false">Einstellungen</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <!-- SZENEN -->
+  <section class="view" id="view-scenes">
+    <div class="note warn" id="keyNote" hidden>Noch kein Gemini-Schlüssel hinterlegt. <button class="btn sm" type="button" data-goto="settings">Jetzt eintragen</button></div>
+    <div class="statusline" id="statusline"></div>
+    <details class="card" id="soundCard">
+      <summary>Klang</summary>
+      <div class="sliders">
+        <div class="sl"><header><label for="sTempo">Tempo</label><output id="oTempo"></output></header><input type="range" id="sTempo" min="0.8" max="1.2" step="0.01"></div>
+        <div class="sl"><header><label for="sPitch">Tiefe</label><output id="oPitch"></output></header><input type="range" id="sPitch" min="-4" max="2" step="0.5"></div>
+        <div class="sl"><header><label for="sWarm">Wärme</label><output id="oWarm"></output></header><input type="range" id="sWarm" min="0" max="8" step="0.5"></div>
+        <div class="sl"><header><label for="sBright">Helligkeit</label><output id="oBright"></output></header><input type="range" id="sBright" min="-6" max="4" step="0.5"></div>
+        <label class="f"><span>Lautheit (Ziel)</span>
+          <select id="sLufs"><option value="-14">−14 LUFS · laut (TikTok, Reels)</option><option value="-16">−16 LUFS · Standard</option><option value="-18">−18 LUFS · leise, wie dein Beispiel</option></select></label>
+        <label class="f"><span>Kompressor</span>
+          <select id="sComp"><option value="1">An · gleichmäßige Lautstärke</option><option value="0">Aus · natürlicher</option></select></label>
+      </div>
+      <p class="hint" style="margin:12px 0 0">Klang-Änderungen kosten keine Anfrage. Die Stimme wird nur neu berechnet, nicht neu generiert.</p>
+    </details>
+    <div id="sceneList"></div>
+    <div class="add-row">
+      <button class="btn" type="button" id="addScene">+ Szene</button>
+      <button class="btn" type="button" id="addIntro">+ Intro</button>
+      <button class="btn" type="button" id="addOutro">+ Outro</button>
+    </div>
+  </section>
+
+  <!-- SKRIPT -->
+  <section class="view" id="view-script" hidden>
+    <div class="card stack">
+      <h2>Skript einfügen</h2>
+      <p class="hint">Füg deinen Text ein. Jeder Absatz wird eine Szene, also eine Einblendung im Video.</p>
+      <textarea id="rawScript" rows="7" placeholder="Dünyadaki bütün merhamet, sadece yüzde bir.&#10;&#10;Peygamber Efendimiz şöyle buyurdu: …"></textarea>
+      <div class="row">
+        <select id="splitMode" style="width:auto"><option value="para">Absatz = Szene</option><option value="sent">Satz = Szene</option></select>
+        <span class="hint" id="rawLangHint"></span>
+      </div>
+      <div class="row">
+        <button class="btn primary" type="button" id="splitReplace">Als Szenen übernehmen</button>
+        <button class="btn" type="button" id="splitAppend">Anhängen</button>
+      </div>
+    </div>
+
+    <div class="card stack">
+      <h2>Übersetzen</h2>
+      <p class="hint" id="trHint"></p>
+      <label class="row small"><input type="checkbox" id="trOverwrite" style="width:18px;height:18px;accent-color:var(--accent)"> Vorhandene Übersetzungen überschreiben</label>
+      <div class="row"><button class="btn primary" type="button" id="trBtn">Übersetzen</button></div>
+    </div>
+
+    <div class="card stack">
+      <h2>KI-Skript aus Thema oder Hadith</h2>
+      <p class="hint">Beschreib das Thema oder füg einen Hadith mit Quelle ein. Die KI schreibt ein ruhiges Skript in Szenen.</p>
+      <textarea id="aiTopic" rows="4" placeholder="z. B. Hadith über die 100 Teile der Barmherzigkeit (Bukhari 6000) – Fokus: Hoffnung"></textarea>
+      <div class="row">
+        <label class="f" style="flex:1 1 140px"><span>Sprache</span><select id="aiLang"><option value="both">Deutsch + Türkisch</option><option value="de">Deutsch</option><option value="tr">Türkisch</option></select></label>
+        <label class="f" style="flex:1 1 140px"><span>Länge</span><select id="aiLen"><option value="30">ca. 30 s</option><option value="45" selected>ca. 45 s</option><option value="60">ca. 60 s</option></select></label>
+      </div>
+      <div class="row"><button class="btn primary" type="button" id="aiBtn">Skript erstellen</button></div>
+      <div id="aiResult" class="gen-result" hidden></div>
+    </div>
+
+    <div class="card stack">
+      <h2>Vorlagen für Intro und Outro</h2>
+      <p class="hint">Mit „+ Intro“ und „+ Outro“ fügst du diese Szenen in einem Tipp ein, in beiden Sprachen.</p>
+      <div class="list" id="tplList"></div>
+      <div class="row"><button class="btn" type="button" id="tplAdd">+ Vorlage</button></div>
+    </div>
+  </section>
+
+  <!-- AUSSPRACHE -->
+  <section class="view" id="view-dict" hidden>
+    <div class="card stack">
+      <h2>Aussprache-Wörterbuch</h2>
+      <p class="hint">Charon spricht die gängigen arabischen Begriffe schon richtig. Trag hier nur ein, was falsch klingt. Schreib die Aussprache so, wie man sie hört, z. B. „Al-laah“. Die Untertitel zeigen weiter dein Original.</p>
+      <div class="list" id="dictList"></div>
+      <div class="row"><button class="btn" type="button" id="dictAdd">+ Begriff</button></div>
+    </div>
+  </section>
+
+  <!-- EINSTELLUNGEN -->
+  <section class="view" id="view-settings" hidden>
+    <div class="card stack">
+      <h2>Gemini-Schlüssel</h2>
+      <p class="hint">Holst du dir in Google AI Studio unter „Get API key“. Er wird nur auf diesem Gerät gespeichert und geht direkt an Google.</p>
+      <div class="row" style="flex-wrap:nowrap">
+        <input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="AIza…">
+        <button class="btn" type="button" id="keyShow">Zeigen</button>
+      </div>
+      <div class="row"><button class="btn primary" type="button" id="keyTest">Prüfen &amp; Modelle laden</button><span class="hint" id="keyStatus"></span></div>
+    </div>
+
+    <div class="card stack">
+      <h2>Stimme</h2>
+      <label class="f"><span>Sprecher</span><select id="voice"></select></label>
+      <label class="f"><span>Grundstil (Regieanweisung)</span><textarea id="baseStyle" rows="4"></textarea></label>
+      <div class="row"><button class="btn sm" type="button" id="styleReset">Standard wiederherstellen</button></div>
+    </div>
+
+    <div class="card stack">
+      <h2>Modelle &amp; Anfragen</h2>
+      <label class="f"><span>Sprachmodell (Stimme)</span><select id="ttsModel"></select></label>
+      <label class="f"><span>Textmodell (Übersetzen, Skript)</span><select id="textModel"></select></label>
+      <label class="f"><span>Anfragen sparen</span>
+        <select id="batch"><option value="1">An · ganzes Video in einer Anfrage, Szenen werden automatisch geschnitten</option><option value="0">Aus · jede Szene einzeln (mehr Kontrolle, mehr Anfragen)</option></select></label>
+      <label class="f"><span>Prompt-Format</span>
+        <select id="promptFormat"><option value="kompakt">Kompakt · Anweisung über dem Text (wie AI Studio)</option><option value="regie">Regie-Notizen · Anweisung und Text getrennt markiert</option><option value="system">System · Anweisung als Systemvorgabe</option></select></label>
+      <p class="hint" style="margin:0">Liest die Stimme die Anweisung mit vor? Dann stell ein anderes Format ein.</p>
+      <div class="note" id="usage"></div>
+    </div>
+
+    <div class="card stack">
+      <h2>Szenen &amp; Export</h2>
+      <label class="f"><span>Standard-Pause nach jeder Szene (Sekunden)</span><input type="number" id="defPause" min="0" max="5" step="0.1"></label>
+      <div class="row">
+        <label class="f" style="flex:1 1 140px"><span>Abtastrate</span><select id="outSr"><option value="48000">48 kHz · Video</option><option value="44100">44,1 kHz</option></select></label>
+        <label class="f" style="flex:1 1 140px"><span>MP3-Qualität</span><select id="mp3Br"><option value="128">128 kbit/s</option><option value="192">192 kbit/s</option><option value="256">256 kbit/s</option></select></label>
+      </div>
+    </div>
+
+    <div class="card stack">
+      <h2>Daten</h2>
+      <p class="hint">Projekte und Aufnahmen liegen nur in diesem Browser. Sicher wichtige Projekte als Datei.</p>
+      <div class="row">
+        <button class="btn" type="button" id="backupBtn">Projekt sichern</button>
+        <button class="btn" type="button" id="restoreBtn">Projekt laden</button>
+        <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+      </div>
+      <div class="row"><button class="btn danger" type="button" id="wipeBtn">Alle Daten löschen</button><span class="hint" id="wipeHint"></span></div>
+    </div>
+    <p class="hint" style="text-align:center">Sükûn Voice Studio · MP3-Kodierung mit LAME (lame.sourceforge.net) · ZIP mit JSZip</p>
+  </section>
+</main>
+
+<div class="actionbar">
+  <div class="wrap">
+    <button class="btn primary" type="button" id="genAll">Alle vertonen</button>
+    <button class="btn" type="button" id="playAll">▶ Anhören</button>
+    <button class="btn" type="button" id="exportBtn">Export</button>
+  </div>
+</div>
+
+<dialog id="projDlg">
+  <div class="dlg">
+    <header><h2>Projekte</h2><button class="iconbtn" type="button" data-close aria-label="Schließen">✕</button></header>
+    <div class="row" style="flex-wrap:nowrap"><input type="text" id="projRename" placeholder="Projektname"><button class="btn" type="button" id="projRenameBtn">Umbenennen</button></div>
+    <div class="list" id="projList"></div>
+    <div class="row"><button class="btn primary" type="button" id="projNew">+ Neues Projekt</button><button class="btn" type="button" id="projDup">Duplizieren</button></div>
+  </div>
+</dialog>
+
+<dialog id="exportDlg">
+  <div class="dlg">
+    <header><h2>Export</h2><button class="iconbtn" type="button" data-close aria-label="Schließen">✕</button></header>
+    <div class="summary" id="expSummary"></div>
+    <div class="note warn" id="expWarn" hidden></div>
+    <label class="f"><span>Audioformat</span><select id="expFmt"><option value="mp3">MP3 · klein, für CapCut &amp; Co.</option><option value="wav">WAV · verlustfrei</option></select></label>
+    <div class="checks">
+      <label><input type="checkbox" id="expFull" checked> Ganzes Video als eine Datei</label>
+      <label><input type="checkbox" id="expSrt" checked> Untertitel (SRT) mit Timing</label>
+      <label><input type="checkbox" id="expScenes"> Einzelne Szenen (als ZIP)</label>
+    </div>
+    <div class="row">
+      <button class="btn primary" type="button" id="expDownload">Herunterladen</button>
+      <button class="btn" type="button" id="expShare" hidden>Teilen …</button>
+    </div>
+    <p class="hint" style="margin:0" id="expHint">Tipp: In CapCut erst die Audiodatei einfügen, dann die SRT über „Untertitel → Importieren“ laden.</p>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/lame.min.js" defer></script>
+<script src="vendor/jszip.min.js" defer></script>
+<script>
+'use strict';
+/* ============================== Basics ============================== */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2));
+const API = 'https://generativelanguage.googleapis.com/v1beta';
+const LANG_NAME = { de: 'Deutsch', tr: 'Türkisch' };
+const ADJ = { de: 'deutsch', tr: 'türkisch' };
+function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtTime(sec) { if (!isFinite(sec)) return '—'; const m = Math.floor(sec / 60); const s = sec - m * 60; return `${m}:${s.toFixed(1).padStart(4, '0').replace('.', ',')}`; }
+function slug(s) { return (s || 'projekt').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ı/g, 'i').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'projekt'; }
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('sukun.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('sukun.' + k, JSON.stringify(v)); } catch { } }
+};
+class UserError extends Error { constructor(title, detail, goto) { super(title); this.title = title; this.detail = detail; this.goto = goto; } }
+
+/* ============================== Defaults ============================== */
+const DEFAULT_STYLE = 'Lies ruhig, langsam und warm vor, wie ein nachdenklicher Erzähler mit tiefer Stimme. Kurze Pausen nach jedem Satz. Sprich arabische Begriffe mit korrekter arabischer Aussprache und Betonung.';
+const DEFAULTS = { apiKey: '', voice: 'Charon', ttsModel: 'gemini-3.8-flash-tts', textModel: 'gemini-flash-latest', baseStyle: DEFAULT_STYLE, promptFormat: 'kompakt', batch: true, defPause: 0.6, outSr: 48000, mp3Br: 192 };
+const DEFAULT_SOUND = { tempo: 1, pitch: 0, warmth: 2.5, bright: -1.5, lufs: -16, comp: true };
+const MOODS = {
+  ruhig: { label: 'Ruhig', note: '' },
+  ernst: { label: 'Ernst', note: 'Sprich diesen Teil ernst und eindringlich, aber leise und gefasst.' },
+  sanft: { label: 'Sanft', note: 'Sprich diesen Teil besonders sanft und tröstend, sehr weich.' },
+  fluestern: { label: 'Flüsternd', note: 'Sprich diesen Teil fast flüsternd, intim und nah am Mikrofon.' },
+  tief: { label: 'Tief', note: 'Sprich diesen Teil mit besonders tiefer, sonorer Stimme und etwas langsamer.' },
+  betont: { label: 'Betont', note: 'Betone die Kernaussage deutlich und mache davor eine kurze Pause.' }
+};
+const VOICES = [['Charon', 'm', 'informativ'], ['Algenib', 'm', 'tief, rau'], ['Enceladus', 'm', 'hauchig'], ['Algieba', 'm', 'sanft'], ['Iapetus', 'm', 'klar'], ['Schedar', 'm', 'gleichmäßig'], ['Umbriel', 'm', 'locker'], ['Sadaltager', 'm', 'kundig'], ['Rasalgethi', 'm', 'informativ'], ['Alnilam', 'm', 'bestimmt'], ['Orus', 'm', 'bestimmt'], ['Achird', 'm', 'freundlich'], ['Zubenelgenubi', 'm', 'lässig'], ['Sadachbia', 'm', 'lebhaft'], ['Puck', 'm', 'munter'], ['Fenrir', 'm', 'aufgeregt'], ['Achernar', 'w', 'weich'], ['Sulafat', 'w', 'warm'], ['Vindemiatrix', 'w', 'sanft'], ['Gacrux', 'w', 'reif'], ['Kore', 'w', 'bestimmt'], ['Aoede', 'w', 'luftig'], ['Callirrhoe', 'w', 'locker'], ['Despina', 'w', 'weich'], ['Erinome', 'w', 'klar'], ['Laomedeia', 'w', 'munter'], ['Leda', 'w', 'jugendlich'], ['Pulcherrima', 'w', 'direkt'], ['Autonoe', 'w', 'hell'], ['Zephyr', 'w', 'hell']];
+const DEFAULT_DICT = [
+  { id: uid(), term: 'ﷺ', de: 'sallallahu alayhi wa sallam', tr: 'sallallahu aleyhi ve sellem' },
+  { id: uid(), term: '(s.a.v.)', de: 'sallallahu alayhi wa sallam', tr: 'sallallahu aleyhi ve sellem' },
+  { id: uid(), term: '(s.a.w.)', de: 'sallallahu alayhi wa sallam', tr: 'sallallahu aleyhi ve sellem' },
+  { id: uid(), term: '(r.a.)', de: 'radiyallahu anhu', tr: 'radıyallahu anh' },
+  { id: uid(), term: '(c.c.)', de: '', tr: 'celle celâlühû' }
+];
+const DEFAULT_TPL = [
+  { id: uid(), kind: 'intro', name: 'Hadith-Einleitung', de: 'Der Prophet, Friede sei mit ihm, sagte:', tr: 'Peygamber Efendimiz şöyle buyurdu:' },
+  { id: uid(), kind: 'outro', name: 'Teilen', de: 'Schick diesen Hadith jemandem, den du liebst.', tr: 'Bu hadisi, sevdiğin birine gönder.' },
+  { id: uid(), kind: 'outro', name: 'Folgen', de: 'Folge für mehr tägliche Erinnerungen.', tr: 'Daha fazla hatırlatma için takip et.' }
+];
+const SAMPLE = {
+  name: 'Beispiel · Barmherzigkeit (1 %)', source: 'Sahih al-Bukhari 6000 · Sahih Muslim 2752',
+  scenes: [
+    ['Die ganze Barmherzigkeit auf dieser Welt ist nur ein Prozent.', 'Dünyadaki bütün merhamet, sadece yüzde bir.'],
+    ['Der Prophet, Friede sei mit ihm, sagte: „Allah hat die Barmherzigkeit in hundert Teile geteilt.“', 'Peygamber Efendimiz şöyle buyurdu: “Allah rahmeti yüz parçaya ayırdı.”'],
+    ['„Neunundneunzig davon hat Er bei Sich behalten und nur einen einzigen Teil auf die Erde herabgesandt.“', '“Doksan dokuzunu kendi katında tuttu, yalnızca bir parçasını yeryüzüne indirdi.”'],
+    ['Die Zärtlichkeit einer Mutter zu ihrem Baby … die Barmherzigkeit der Menschen untereinander …', 'Bir annenin bebeğine olan şefkati… İnsanların birbirine merhameti…'],
+    ['Sogar das Pferd, das seinen Huf hebt, um sein Fohlen nicht zu treten … all das kommt aus diesem einen Teil.', 'Hatta bir atın, yavrusuna basmamak için ayağını kaldırması… Hepsi, o tek parçadan.'],
+    ['Und die übrigen neunundneunzig? Allah bewahrt sie für Seine Diener auf, für den Tag der Auferstehung.', 'Peki ya geri kalan doksan dokuz parça? Allah onları, kıyamet günü kulları için saklıyor.'],
+    ['Wenn ein Prozent schon die ganze Welt so erfüllt … dann denk an die neunundneunzig.', 'Yüzde bir, bütün dünyayı böyle dolduruyorsa… bir de doksan dokuzunu düşün.'],
+    ['Schick diesen Hadith jemandem, den du liebst.', 'Bu hadisi, sevdiğin birine gönder.']
+  ]
+};
+
+/* ============================== State ============================== */
+const S = {
+  settings: Object.assign({}, DEFAULTS, store.get('settings', {})),
+  dict: store.get('dict', null) || DEFAULT_DICT,
+  tpl: store.get('templates', null) || DEFAULT_TPL,
+  lang: store.get('lang', 'de'),
+  tab: 'scenes',
+  project: null,
+  busy: false,
+  models: store.get('models', { tts: [], text: [] })
+};
+function saveSettings() { store.set('settings', S.settings); }
+function saveDict() { store.set('dict', S.dict); }
+function saveTpl() { store.set('templates', S.tpl); }
+
+/* ============================== IndexedDB ============================== */
+const DB = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('sukun', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('projects', { keyPath: 'id' });
+      r.onsuccess = () => { this.db = r.result; res(this.db); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async tx(mode, fn) { const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('projects', mode); const st = t.objectStore('projects'); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); },
+  put(p) { return this.tx('readwrite', st => st.put(p)); },
+  async get(id) { const db = await this.open(); return new Promise((res, rej) => { const r = db.transaction('projects').objectStore('projects').get(id); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  async all() { const db = await this.open(); return new Promise((res, rej) => { const r = db.transaction('projects').objectStore('projects').getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => rej(r.error); }); },
+  del(id) { return this.tx('readwrite', st => st.delete(id)); },
+  clear() { return this.tx('readwrite', st => st.clear()); }
+};
+let saveTimer = null;
+function saveProject(now) {
+  if (!S.project) return;
+  S.project.updatedAt = Date.now();
+  clearTimeout(saveTimer);
+  const go = () => DB.put(S.project).catch(e => toast('Speichern fehlgeschlagen', String(e && e.message || e), { err: true }));
+  if (now) return go(); saveTimer = setTimeout(go, 400);
+}
+function newScene(de = '', tr = '', mood = 'ruhig') { return { id: uid(), text: { de, tr }, mood, pause: S.settings.defPause, takes: { de: null, tr: null }, prev: { de: null, tr: null } }; }
+function newProject(name, scenes = [], source = '') { return { id: uid(), name, source, createdAt: Date.now(), updatedAt: Date.now(), sound: Object.assign({}, DEFAULT_SOUND), scenes }; }
+
+/* ============================== Toasts ============================== */
+function toast(title, detail = '', opts = {}) {
+  const box = document.createElement('div'); box.className = 't' + (opts.err ? ' err' : '');
+  box.innerHTML = `<div class="tx"><b></b><div class="small muted"></div><div class="acts"></div></div><button class="iconbtn" aria-label="Schließen">✕</button>`;
+  $('b', box).textContent = title; $('.small', box).textContent = detail;
+  (opts.actions || []).forEach(([label, fn]) => { const b = document.createElement('button'); b.className = 'btn sm'; b.textContent = label; b.onclick = () => { box.remove(); fn(); }; $('.acts', box).append(b); });
+  $('.iconbtn', box).onclick = () => box.remove();
+  $('#toast').append(box);
+  const ms = opts.ms ?? (opts.err || opts.actions ? 9000 : 3500);
+  if (ms > 0) setTimeout(() => box.remove(), ms);
+  return box;
+}
+function showError(e) {
+  console.error(e);
+  if (e instanceof UserError) toast(e.title, e.detail || '', { err: true, actions: e.goto ? [['Zu den Einstellungen', () => setTab(e.goto)]] : [] });
+  else toast('Etwas ist schiefgelaufen', String(e && e.message || e), { err: true });
+}
+
+/* ============================== Usage counter ============================== */
+function today() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function countUsage(kind) { const u = store.get('usage', {}); if (u.date !== today()) { u.date = today(); u.tts = 0; u.text = 0; } u[kind] = (u[kind] || 0) + 1; store.set('usage', u); renderUsage(); }
+function renderUsage() { const u = store.get('usage', {}); const t = u.date === today() ? u : { tts: 0, text: 0 }; $('#usage').textContent = `Heute gesendet: ${t.tts || 0} Sprach-Anfragen · ${t.text || 0} Text-Anfragen. Deine Tageslimits der Gratis-Stufe siehst du in AI Studio.`; }
+
+/* ============================== Gemini API ============================== */
+function retryDelaySec(err) { try { const ri = (err.details || []).find(d => String(d['@type'] || '').includes('RetryInfo')); if (ri && ri.retryDelay) return Math.ceil(parseFloat(ri.retryDelay)); } catch { } return 20; }
+async function countdown(sec, label) {
+  const box = toast(label, '', { ms: 0 });
+  for (let s = sec; s > 0; s--) { $('.small', box).textContent = `Neuer Versuch in ${s} s …`; await sleep(1000); }
+  box.remove();
+}
+async function apiFetch(path, body, kind, attempt = 0) {
+  const key = (S.settings.apiKey || '').trim();
+  if (!key) throw new UserError('Kein Gemini-Schlüssel', 'Trag deinen Schlüssel unter Einstellungen ein.', 'settings');
+  let res;
+  try {
+    res = await fetch(`${API}/${path}`, { method: body ? 'POST' : 'GET', headers: Object.assign({ 'x-goog-api-key': key }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
+  } catch (e) { throw new UserError('Keine Verbindung zu Google', 'Prüf die Internetverbindung und versuch es noch einmal.'); }
+  if (res.ok) { if (kind) countUsage(kind); return res.json(); }
+  let err = {}; try { err = (await res.json()).error || {}; } catch { }
+  const msg = err.message || res.statusText || '';
+  if (res.status === 429) {
+    const daily = /per ?day|perday|daily|requests_per_day/i.test(JSON.stringify(err));
+    const wait = retryDelaySec(err);
+    if (!daily && attempt === 0 && wait <= 65) { await countdown(wait, 'Google bremst kurz'); return apiFetch(path, body, kind, 1); }
+    throw new UserError(daily ? 'Tageslimit erreicht' : 'Zu viele Anfragen', daily ? 'Die Gratis-Stufe ist für heute aufgebraucht. Morgen geht es weiter. Alternativ in AI Studio die Abrechnung aktivieren (ca. 1–3 Cent pro Minute Audio).' : 'Warte eine Minute und versuch es dann erneut.');
+  }
+  if ((res.status >= 500) && attempt === 0) { await sleep(2500); return apiFetch(path, body, kind, 1); }
+  if (/API[_ ]?key/i.test(msg) && (res.status === 400 || res.status === 403)) throw new UserError('Schlüssel ungültig', 'Prüf den Gemini-Schlüssel in den Einstellungen.', 'settings');
+  if (res.status === 404) { const m = (path.match(/models\/([^:]+)/) || [])[1] || ''; throw new UserError('Modell nicht gefunden', `„${m}“ ist mit deinem Schlüssel nicht verfügbar. Tippe in den Einstellungen auf „Prüfen & Modelle laden“.`, 'settings'); }
+  if (res.status === 403) throw new UserError('Zugriff verweigert', msg, 'settings');
+  throw new UserError(`Google meldet Fehler ${res.status}`, msg);
+}
+async function listModels() {
+  const out = []; let token = '';
+  for (let i = 0; i < 5; i++) {
+    const j = await apiFetch('models?pageSize=200' + (token ? '&pageToken=' + encodeURIComponent(token) : ''), null, null);
+    out.push(...(j.models || [])); token = j.nextPageToken; if (!token) break;
+  }
+  const gen = out.filter(m => (m.supportedGenerationMethods || []).includes('generateContent')).map(m => m.name.replace(/^models\//, ''));
+  const tts = gen.filter(n => /tts/i.test(n));
+  const text = gen.filter(n => /gemini/i.test(n) && !/tts|image|audio|live|embed|vision|learnlm|robotics|computer/i.test(n));
+  return { tts, text };
+}
+
+/* ----- prompts ----- */
+function applyDict(text, lang) {
+  let t = text || '';
+  for (const e of S.dict) {
+    const rep = (e[lang] || '').trim(); const term = (e.term || '').trim();
+    if (!rep || !term) continue;
+    const q = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const wordy = /^[\p{L}\p{N}]/u.test(term) && /[\p{L}\p{N}]$/u.test(term);
+    const re = wordy ? new RegExp(`(?<![\\p{L}\\p{N}])${q}(?![\\p{L}\\p{N}])`, 'giu') : new RegExp(q, 'g');
+    t = t.replace(re, rep);
+  }
+  return t.replace(/\s+([,.!?…])/g, '$1').trim();
+}
+function direction(mood, lang, batch) {
+  const p = [(S.settings.baseStyle || DEFAULT_STYLE).trim()];
+  if (mood && MOODS[mood] && MOODS[mood].note) p.push(MOODS[mood].note);
+  if (batch) p.push('Mache zwischen den Absätzen jeweils eine deutliche Pause von etwa einer Sekunde.');
+  p.push(`Der Text ist auf ${LANG_NAME[lang]}.`);
+  return p.join(' ');
+}
+function buildTtsBody(text, dir) {
+  const f = S.settings.promptFormat;
+  let prompt, system = null;
+  if (f === 'regie') prompt = `### REGIE (nicht vorlesen)\n${dir}\n\n### TEXT (nur diesen Teil sprechen)\n${text}`;
+  else if (f === 'system') { system = dir; prompt = text; }
+  else prompt = `${dir}\n${text}`;
+  const body = { contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: S.settings.voice } } } } };
+  if (system) body.systemInstruction = { parts: [{ text: system }] };
+  return body;
+}
+function sceneSig(sc, lang) { return hash([applyDict(sc.text[lang], lang), sc.mood, S.settings.voice, S.settings.baseStyle, S.settings.ttsModel, S.settings.promptFormat].join('|')); }
+async function ttsCall(text, dir) {
+  const j = await apiFetch(`models/${encodeURIComponent(S.settings.ttsModel)}:generateContent`, buildTtsBody(text, dir), 'tts');
+  const cand = (j.candidates || [])[0] || {};
+  const part = ((cand.content || {}).parts || []).find(p => p.inlineData && /audio|pcm|l16|wav/i.test(p.inlineData.mimeType || 'audio'));
+  if (!part) {
+    const why = cand.finishReason || (j.promptFeedback && j.promptFeedback.blockReason) || 'unbekannt';
+    throw new UserError('Keine Audiodaten erhalten', `Google hat keine Stimme geliefert (Grund: ${why}). Versuch es noch einmal oder kürze den Text.`);
+  }
+  return decodeInline(part.inlineData);
+}
+async function textCall(system, user) {
+  const body = { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { temperature: 0.4, responseMimeType: 'application/json' } };
+  const j = await apiFetch(`models/${encodeURIComponent(S.settings.textModel)}:generateContent`, body, 'text');
+  const txt = (((j.candidates || [])[0] || {}).content || { parts: [] }).parts.map(p => p.text || '').join('').trim();
+  try { return JSON.parse(txt.replace(/^```(?:json)?\s*|\s*```$/g, '')); }
+  catch { throw new UserError('Antwort nicht lesbar', 'Das Textmodell hat kein gültiges Ergebnis geliefert. Versuch es noch einmal.'); }
+}
+
+/* ============================== Audio decoding ============================== */
+function b64ToBytes(b64) { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+function i16BytesToF32(u8) { const n = u8.length >> 1; const dv = new DataView(u8.buffer, u8.byteOffset, n * 2); const f = new Float32Array(n); for (let i = 0; i < n; i++) f[i] = dv.getInt16(i * 2, true) / 32768; return f; }
+async function decodeInline(inline) {
+  const mime = (inline.mimeType || '').toLowerCase();
+  const u8 = b64ToBytes(inline.data);
+  const riff = u8.length > 12 && u8[0] === 82 && u8[1] === 73 && u8[2] === 70 && u8[3] === 70;
+  if (!riff && /l16|pcm/.test(mime)) { const rate = +((mime.match(/rate=(\d+)/) || [])[1]) || 24000; return { samples: i16BytesToF32(u8), sr: rate }; }
+  if (riff) { const w = parseWav(u8); if (w) return w; }
+  const ctx = new OfflineAudioContext(1, 1, 48000);
+  const buf = await ctx.decodeAudioData(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength));
+  return { samples: buf.getChannelData(0).slice(), sr: buf.sampleRate };
+}
+function parseWav(u8) {
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength); let p = 12, fmt = null;
+  while (p + 8 <= u8.length) {
+    const id = String.fromCharCode(u8[p], u8[p + 1], u8[p + 2], u8[p + 3]); const size = dv.getUint32(p + 4, true);
+    if (id === 'fmt ') fmt = { format: dv.getUint16(p + 8, true), ch: dv.getUint16(p + 10, true), sr: dv.getUint32(p + 12, true), bits: dv.getUint16(p + 22, true) };
+    if (id === 'data' && fmt && fmt.format === 1 && fmt.bits === 16) {
+      const len = Math.min(size, u8.length - p - 8); const frames = Math.floor(len / (2 * fmt.ch)); const f = new Float32Array(frames);
+      for (let i = 0; i < frames; i++) { let s = 0; for (let c = 0; c < fmt.ch; c++) s += dv.getInt16(p + 8 + (i * fmt.ch + c) * 2, true); f[i] = s / fmt.ch / 32768; }
+      return { samples: f, sr: fmt.sr };
+    }
+    p += 8 + size + (size & 1);
+  }
+  return null;
+}
+function f32ToI16(f) { const a = new Int16Array(f.length); for (let i = 0; i < f.length; i++) { const v = Math.max(-1, Math.min(1, f[i])); a[i] = v < 0 ? v * 32768 : v * 32767; } return a; }
+function i16ToF32(buf) { const a = new Int16Array(buf); const f = new Float32Array(a.length); for (let i = 0; i < a.length; i++) f[i] = a[i] / 32768; return f; }
+
+/* ============================== Silence & scene splitting ============================== */
+function frameDb(x, sr, ms = 10) {
+  const hop = Math.max(1, Math.round(sr * ms / 1000)); const n = Math.floor(x.length / hop); const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let j = i * hop, e = j + hop; j < e; j++) s += x[j] * x[j]; out[i] = 10 * Math.log10(s / hop + 1e-12); }
+  return { db: out, hop };
+}
+function silenceThreshold(db) { const sorted = Array.from(db).filter(v => v > -100).sort((a, b) => a - b); const loud = sorted[Math.floor(sorted.length * 0.9)] ?? -20; return Math.max(-58, loud - 32); }
+function trimSilence(x, sr, padMs = 70) {
+  const { db, hop } = frameDb(x, sr); const thr = silenceThreshold(db);
+  let a = 0, b = db.length - 1; while (a < db.length && db[a] < thr) a++; while (b > a && db[b] < thr) b--;
+  if (a >= b) return x;
+  const pad = Math.round(sr * padMs / 1000);
+  return x.slice(Math.max(0, a * hop - pad), Math.min(x.length, (b + 1) * hop + pad));
+}
+function splitByPauses(x, sr, weights) {
+  const n = weights.length; if (n <= 1) return { parts: [trimSilence(x, sr)], exact: true };
+  const { db, hop } = frameDb(x, sr); const thr = silenceThreshold(db);
+  let a = 0, b = db.length - 1; while (a < db.length && db[a] < thr) a++; while (b > a && db[b] < thr) b--;
+  const runs = []; let start = -1;
+  for (let i = a; i <= b; i++) { if (db[i] < thr) { if (start < 0) start = i; } else if (start >= 0) { runs.push({ s: start, e: i, len: i - start }); start = -1; } }
+  const minLen = Math.round(180 / (hop / sr * 1000));
+  const cands = runs.filter(r => r.len >= minLen);
+  const total = b - a; const wsum = weights.reduce((p, c) => p + c, 0) || 1;
+  const expected = []; let acc = 0; for (let k = 0; k < n - 1; k++) { acc += weights[k]; expected.push(a + total * acc / wsum); }
+  let cuts = null, exact = true;
+  if (cands.length >= n - 1) {
+    const top = [...cands].sort((p, q) => q.len - p.len).slice(0, n - 1).sort((p, q) => p.s - q.s);
+    const pos = top.map(r => (r.s + r.e) / 2);
+    const segs = []; let prev = a; for (const c of pos.concat([b])) { segs.push(c - prev); prev = c; }
+    const ok = segs.every((len, k) => { const exp = total * weights[k] / wsum; return len > exp * 0.35 && len < exp * 2.6; });
+    if (ok) cuts = pos;
+  }
+  if (!cuts) {
+    exact = false; cuts = []; const used = new Set(); const win = total / n * 0.45;
+    for (const e of expected) {
+      let best = null; for (const r of cands) { const mid = (r.s + r.e) / 2; if (used.has(r) || Math.abs(mid - e) > win) continue; if (!best || r.len > best.len) best = r; }
+      if (best) { used.add(best); cuts.push((best.s + best.e) / 2); }
+      else { let m = Math.round(e), lo = Math.max(a, m - 15), hi = Math.min(b, m + 15); for (let i = lo; i <= hi; i++) if (db[i] < db[m]) m = i; cuts.push(m); }
+    }
+    cuts.sort((p, q) => p - q);
+  }
+  const bounds = [0].concat(cuts.map(c => Math.round(c * hop)), [x.length]);
+  const parts = []; for (let k = 0; k < n; k++) parts.push(trimSilence(x.subarray(bounds[k], bounds[k + 1]), sr));
+  return { parts, exact };
+}
+
+/* ============================== DSP: tempo & pitch ============================== */
+function resample(x, f) { const n = Math.max(1, Math.floor((x.length - 1) / f)); const y = new Float32Array(n); for (let i = 0; i < n; i++) { const p = i * f; const k = p | 0; const fr = p - k; y[i] = x[k] * (1 - fr) + (x[k + 1] ?? 0) * fr; } return y; }
+function wsola(x, rate, sr) {
+  if (Math.abs(rate - 1) < 0.004) return x;
+  const N = sr >= 32000 ? 2048 : 1024, Hs = N >> 1, tol = N >> 2;
+  const win = new Float32Array(N); for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / N);
+  const outLen = Math.ceil(x.length / rate) + N; const y = new Float32Array(outLen); const w = new Float32Array(outLen);
+  let prev = 0, out = 0;
+  for (let k = 0; ; k++) {
+    const nominal = Math.round(k * Hs * rate);
+    if (nominal + N >= x.length || out + N >= outLen) break;
+    let pos = nominal;
+    if (k > 0) {
+      const ref = prev + Hs; let bestC = -Infinity, best = 0;
+      if (ref + Hs < x.length) {
+        for (let d = -tol; d <= tol; d += 2) { const p = nominal + d; if (p < 0 || p + Hs >= x.length) continue; let c = 0; for (let i = 0; i < Hs; i += 4) c += x[ref + i] * x[p + i]; if (c > bestC) { bestC = c; best = d; } }
+        pos = Math.max(0, nominal + best);
+      }
+    }
+    for (let i = 0; i < N; i++) { y[out + i] += x[pos + i] * win[i]; w[out + i] += win[i]; }
+    prev = pos; out += Hs;
+  }
+  const len = Math.min(outLen, out + Hs); const r = new Float32Array(len);
+  for (let i = 0; i < len; i++) r[i] = w[i] > 1e-3 ? y[i] / w[i] : 0;
+  return r;
+}
+function pitchTempo(x, sr, semis, tempo) {
+  const f = Math.pow(2, semis / 12);
+  let y = Math.abs(semis) > 0.01 ? resample(x, f) : x;
+  const rate = tempo / (Math.abs(semis) > 0.01 ? f : 1);
+  return wsola(y, rate, sr);
+}
+
+/* ============================== DSP: filter chain & loudness ============================== */
+function biq(ctx, type, f, q, g) { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q != null) b.Q.value = q; if (g != null) b.gain.value = g; return b; }
+async function renderChain(x, sr, sound, outSr) {
+  const len = Math.ceil(x.length / sr * outSr) + Math.ceil(outSr * 0.02);
+  const ctx = new OfflineAudioContext(1, len, outSr);
+  const buf = ctx.createBuffer(1, x.length, sr); buf.copyToChannel(x, 0);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const nodes = [src, biq(ctx, 'highpass', 70, 0.7), biq(ctx, 'lowshelf', 200, null, sound.warmth), biq(ctx, 'peaking', 3200, 1.0, -1), biq(ctx, 'highshelf', 6500, null, sound.bright)];
+  if (sound.comp) { const c = ctx.createDynamicsCompressor(); c.threshold.value = -22; c.knee.value = 6; c.ratio.value = 3; c.attack.value = 0.008; c.release.value = 0.18; nodes.push(c); }
+  for (let i = 0; i < nodes.length - 1; i++) nodes[i].connect(nodes[i + 1]);
+  nodes[nodes.length - 1].connect(ctx.destination); src.start();
+  const out = await ctx.startRendering(); return out.getChannelData(0);
+}
+function biquadCoefs(type, fc, fs, q, gainDb) {
+  const w0 = 2 * Math.PI * fc / fs, cos = Math.cos(w0), sin = Math.sin(w0), al = sin / (2 * q);
+  let b0, b1, b2, a0, a1, a2;
+  if (type === 'hs') { const A = Math.pow(10, gainDb / 40), s = 2 * Math.sqrt(A) * al; b0 = A * ((A + 1) + (A - 1) * cos + s); b1 = -2 * A * ((A - 1) + (A + 1) * cos); b2 = A * ((A + 1) + (A - 1) * cos - s); a0 = (A + 1) - (A - 1) * cos + s; a1 = 2 * ((A - 1) - (A + 1) * cos); a2 = (A + 1) - (A - 1) * cos - s; }
+  else { b0 = (1 + cos) / 2; b1 = -(1 + cos); b2 = (1 + cos) / 2; a0 = 1 + al; a1 = -2 * cos; a2 = 1 - al; }
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+function filt(x, c) { const y = new Float32Array(x.length); let x1 = 0, x2 = 0, y1 = 0, y2 = 0; for (let i = 0; i < x.length; i++) { const v = x[i]; const o = c[0] * v + c[1] * x1 + c[2] * x2 - c[3] * y1 - c[4] * y2; x2 = x1; x1 = v; y2 = y1; y1 = o; y[i] = o; } return y; }
+function lufs(x, sr) {
+  if (!x.length) return -Infinity;
+  const k = filt(filt(x, biquadCoefs('hs', 1681.974, sr, 0.7072, 3.99984)), biquadCoefs('hp', 38.1355, sr, 0.5003));
+  const blk = Math.round(0.4 * sr), step = Math.round(0.1 * sr); const ms = [];
+  for (let s = 0; s + blk <= k.length; s += step) { let e = 0; for (let i = s; i < s + blk; i++) e += k[i] * k[i]; ms.push(e / blk); }
+  if (!ms.length) { let e = 0; for (let i = 0; i < k.length; i++) e += k[i] * k[i]; ms.push(e / k.length); }
+  const L = m => -0.691 + 10 * Math.log10(m + 1e-15);
+  const g1 = ms.filter(m => L(m) > -70); if (!g1.length) return -Infinity;
+  const rel = L(g1.reduce((p, c) => p + c, 0) / g1.length) - 10;
+  const g2 = g1.filter(m => L(m) > rel); return L(g2.reduce((p, c) => p + c, 0) / g2.length);
+}
+
+function limiter(x, sr, ceil) {
+  // Brickwall-Limiter mit 5 ms Vorschau: hält Spitzen unter −1 dBFS, ohne die Lautheit zu senken.
+  const la = Math.max(1, Math.round(sr * 0.005)), n = x.length, req = new Float32Array(n);
+  let any = false; for (let i = 0; i < n; i++) { const a = Math.abs(x[i]); req[i] = a > ceil ? ceil / a : 1; if (a > ceil) any = true; }
+  if (!any) return x;
+  const win = new Float32Array(n); const dq = new Int32Array(n + la + 1); let h = 0, t = 0;
+  for (let i = n - 1; i >= 0; i--) { while (t > h && req[dq[t - 1]] >= req[i]) t--; dq[t++] = i; while (dq[h] > i + la) h++; win[i] = req[dq[h]]; }
+  const att = Math.exp(-1 / (sr * 0.002)), rel = Math.exp(-1 / (sr * 0.08)); let g = 1;
+  for (let i = 0; i < n; i++) { const tg = win[i]; g = tg < g ? tg + (g - tg) * att : tg + (g - tg) * rel; const gg = Math.min(g, req[i]); x[i] *= gg; }
+  return x;
+}
+
+/* ============================== Render cache & timeline ============================== */
+const cache = new Map();
+function soundKey() { const s = S.project.sound; return [s.tempo, s.pitch, s.warmth, s.bright, s.comp ? 1 : 0, S.settings.outSr].join('|'); }
+async function processed(sc, lang) {
+  const take = sc.takes[lang]; if (!take) return null;
+  const key = take.id + '|' + soundKey();
+  if (cache.has(key)) return cache.get(key);
+  const s = S.project.sound; let x = i16ToF32(take.pcm);
+  if (Math.abs(s.pitch) > 0.01 || Math.abs(s.tempo - 1) > 0.004) x = pitchTempo(x, take.sr, s.pitch, s.tempo);
+  const y = await renderChain(x, take.sr, s, S.settings.outSr);
+  if (cache.size > 120) cache.clear();
+  cache.set(key, y); return y;
+}
+let tlCache = { key: '', tl: null };
+async function timeline(lang) {
+  const sr = S.settings.outSr;
+  const ready = S.project.scenes.filter(sc => sc.takes[lang]);
+  const key = lang + '|' + soundKey() + '|' + S.project.sound.lufs + '|' + S.project.scenes.map(sc => (sc.takes[lang] ? sc.takes[lang].id : '-') + ':' + sc.pause).join(',');
+  if (tlCache.key === key) return tlCache.tl;
+  const lead = Math.round(sr * 0.15); const pieces = []; const segs = []; let t = lead;
+  for (const sc of ready) { const y = await processed(sc, lang); pieces.push(y); segs.push({ id: sc.id, start: t / sr, end: (t + y.length) / sr }); t += y.length + Math.round(sr * Math.max(0, +sc.pause || 0)); }
+  const lastPause = ready.length ? Math.round(sr * Math.max(0, +ready[ready.length - 1].pause || 0)) : 0;
+  const total = Math.max(lead, t - lastPause + Math.round(sr * 0.2));
+  const out = new Float32Array(total);
+  pieces.forEach((y, i) => out.set(y, Math.round(segs[i].start * sr)));
+  const L = lufs(out, sr); let gain = isFinite(L) ? Math.pow(10, (S.project.sound.lufs - L) / 20) : 1;
+  gain = Math.min(gain, 8);
+  for (let i = 0; i < out.length; i++) out[i] *= gain;
+  limiter(out, sr, 0.891);
+  const Lf = lufs(out, sr);
+  const tl = { samples: out, sr, segs, gain, lufs: isFinite(Lf) ? Lf : null, duration: total / sr, missing: S.project.scenes.length - ready.length };
+  tlCache = { key, tl }; return tl;
+}
+
+/* ============================== Playback ============================== */
+let actx = null, player = null;
+function audioCtx() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
+function stopPlay() {
+  if (!player) return; const p = player; player = null;
+  try { p.src.onended = null; p.src.stop(); } catch { }
+  cancelAnimationFrame(p.raf); p.onEnd && p.onEnd();
+}
+function playSamples(samples, sr, onTick, onEnd) {
+  stopPlay(); const ctx = audioCtx(); const b = ctx.createBuffer(1, samples.length, sr); b.copyToChannel(samples, 0);
+  const src = ctx.createBufferSource(); src.buffer = b; src.connect(ctx.destination);
+  const t0 = ctx.currentTime + 0.03; src.start(t0);
+  const p = { src, raf: 0, onEnd }; player = p;
+  const tick = () => { if (player !== p) return; onTick && onTick(ctx.currentTime - t0); p.raf = requestAnimationFrame(tick); };
+  p.raf = requestAnimationFrame(tick);
+  src.onended = () => { if (player === p) { player = null; cancelAnimationFrame(p.raf); onEnd && onEnd(); } };
+}
+async function playScene(sc) {
+  const lang = S.lang; if (!sc.takes[lang]) return;
+  const el = sceneEl(sc.id); const btn = el && $('.play', el);
+  if (player && player.sceneId === sc.id) { stopPlay(); return; }
+  try {
+    const tl = await timeline(lang); const y = await processed(sc, lang); const g = tl.gain; const z = new Float32Array(y.length); for (let i = 0; i < y.length; i++) z[i] = y[i] * g;
+    playSamples(z, S.settings.outSr, null, () => { if (btn) btn.textContent = '▶'; el && el.classList.remove('playing'); });
+    player.sceneId = sc.id; if (btn) btn.textContent = '■'; el && el.classList.add('playing');
+  } catch (e) { showError(e); }
+}
+async function playAll() {
+  if (player && player.all) { stopPlay(); return; }
+  const tl = await timeline(S.lang);
+  if (!tl.segs.length) { toast('Noch nichts zu hören', 'Tippe zuerst auf „Alle vertonen“.'); return; }
+  let cur = null;
+  playSamples(tl.samples, tl.sr, t => {
+    const seg = tl.segs.find(s => t >= s.start - 0.05 && t < s.end + 0.3);
+    const id = seg ? seg.id : null; if (id === cur) return;
+    if (cur) { const e = sceneEl(cur); e && e.classList.remove('playing'); }
+    cur = id; if (id) { const e = sceneEl(id); if (e) { e.classList.add('playing'); if (S.tab === 'scenes') e.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }
+  }, () => { $('#playAll').textContent = '▶ Anhören'; if (cur) { const e = sceneEl(cur); e && e.classList.remove('playing'); } });
+  player.all = true; $('#playAll').textContent = '■ Stopp';
+}
+
+/* ============================== Generation ============================== */
+function setTake(sc, lang, samples, sr, sig, exact) {
+  sc.prev[lang] = sc.takes[lang];
+  sc.takes[lang] = { id: uid(), pcm: f32ToI16(samples).buffer, sr, sig, ts: Date.now(), cut: !exact };
+}
+function needsGen(sc, lang) { return (sc.text[lang] || '').trim() && (!sc.takes[lang] || sc.takes[lang].sig !== sceneSig(sc, lang)); }
+function chunkBatch(list, lang) { const out = []; let cur = [], chars = 0; for (const sc of list) { const l = applyDict(sc.text[lang], lang).length; if (cur.length && (cur.length >= 12 || chars + l > 1600)) { out.push(cur); cur = []; chars = 0; } cur.push(sc); chars += l; } if (cur.length) out.push(cur); return out; }
+async function generate(targets, lang) {
+  if (S.busy) return; targets = targets.filter(sc => (sc.text[lang] || '').trim());
+  if (!targets.length) { toast('Kein Text', `Es gibt keine Szene mit ${ADJ[lang]}em Text.`); return; }
+  S.busy = true; stopPlay(); targets.forEach(sc => markBusy(sc.id, true)); updateActionbar();
+  let done = 0;
+  try {
+    const batchable = S.settings.batch ? targets.filter(sc => sc.mood === 'ruhig') : [];
+    const singles = targets.filter(sc => !batchable.includes(sc));
+    if (batchable.length === 1) singles.unshift(batchable.pop());
+    for (const group of chunkBatch(batchable, lang)) {
+      if (group.length === 1) { singles.unshift(group[0]); continue; }
+      const texts = group.map(sc => applyDict(sc.text[lang], lang));
+      const audio = await ttsCall(texts.join('\n\n'), direction('ruhig', lang, true));
+      const { parts, exact } = splitByPauses(audio.samples, audio.sr, texts.map(t => Math.max(8, t.length)));
+      group.forEach((sc, i) => { setTake(sc, lang, parts[i], audio.sr, sceneSig(sc, lang), exact); markBusy(sc.id, false); done++; });
+      saveProject(); renderSceneStates();
+      if (!exact) toast('Schnitte bitte prüfen', 'Die Pausen waren nicht eindeutig. Hör die markierten Szenen an und vertone sie bei Bedarf einzeln neu.');
+    }
+    for (const sc of singles) {
+      const audio = await ttsCall(applyDict(sc.text[lang], lang), direction(sc.mood, lang, false));
+      setTake(sc, lang, trimSilence(audio.samples, audio.sr), audio.sr, sceneSig(sc, lang), true);
+      markBusy(sc.id, false); done++; saveProject(); renderSceneStates();
+    }
+  } catch (e) { showError(e); }
+  finally { S.busy = false; targets.forEach(sc => markBusy(sc.id, false)); saveProject(); renderSceneStates(); updateActionbar(); refreshStatus(); }
+  return done;
+}
+async function genAll() {
+  const lang = S.lang; const todo = S.project.scenes.filter(sc => needsGen(sc, lang));
+  if (!todo.length) {
+    const any = S.project.scenes.some(sc => (sc.text[lang] || '').trim());
+    if (!any) { toast('Noch kein Text', `Schreib Szenen oder füge im Tab „Skript“ einen Text ein.`); return; }
+    toast('Alles ist aktuell', 'Willst du trotzdem alle Szenen neu vertonen?', { actions: [['Alle neu vertonen', () => generate(S.project.scenes.slice(), lang)]] }); return;
+  }
+  await generate(todo, lang);
+}
+
+/* ============================== Export ============================== */
+function wavBlob(samples, sr) {
+  const n = samples.length, buf = new ArrayBuffer(44 + n * 2), dv = new DataView(buf); const w = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true); dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, n * 2, true);
+  const i16 = f32ToI16(samples); new Int16Array(buf, 44).set(i16); return new Blob([buf], { type: 'audio/wav' });
+}
+async function mp3Blob(samples, sr, kbps) {
+  if (!window.lamejs) throw new UserError('MP3-Encoder nicht geladen', 'Lade die Seite neu oder wähl WAV.');
+  const enc = new lamejs.Mp3Encoder(1, sr, kbps); const i16 = f32ToI16(samples); const out = []; const B = 1152;
+  for (let i = 0; i < i16.length; i += B) { const b = enc.encodeBuffer(i16.subarray(i, i + B)); if (b.length) out.push(new Uint8Array(b)); if ((i / B) % 400 === 0) await sleep(0); }
+  const f = enc.flush(); if (f.length) out.push(new Uint8Array(f)); return new Blob(out, { type: 'audio/mpeg' });
+}
+function captionChunks(text) {
+  const clean = String(text || '').replace(/\[[^\]]*\]|<[^>]*>/g, '').replace(/\s+/g, ' ').trim(); if (!clean) return [];
+  const sentences = clean.split(/(?<=[.!?…:;])\s+/); const out = [];
+  for (const s of sentences) {
+    if (s.length <= 42) { out.push(s); continue; }
+    const words = s.split(' '); let line = '';
+    for (const wd of words) { if ((line + ' ' + wd).trim().length > 42 && line) { out.push(line.trim()); line = wd; } else line = (line + ' ' + wd).trim(); }
+    if (line) out.push(line);
+  }
+  return out;
+}
+function srtTime(t) { const ms = Math.max(0, Math.round(t * 1000)); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s = Math.floor(ms / 1000) % 60, r = ms % 1000; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(r).padStart(3, '0')}`; }
+function buildSrt(tl, lang) {
+  let n = 1; const lines = [];
+  for (const seg of tl.segs) {
+    const sc = S.project.scenes.find(x => x.id === seg.id); const chunks = captionChunks(sc.text[lang]); if (!chunks.length) continue;
+    const total = chunks.reduce((p, c) => p + c.length, 0); let t = seg.start; const dur = seg.end - seg.start;
+    chunks.forEach((c, i) => { const d = dur * c.length / total; const end = i === chunks.length - 1 ? seg.end : t + d; lines.push(`${n++}\n${srtTime(t)} --> ${srtTime(end)}\n${c}\n`); t = end; });
+  }
+  return lines.join('\n');
+}
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 15000); }
+async function buildExportFiles() {
+  const lang = S.lang, tl = await timeline(lang), fmt = $('#expFmt').value, base = `${slug(S.project.name)}_${lang}`; const files = [];
+  if (!tl.segs.length) throw new UserError('Nichts zu exportieren', 'Vertone zuerst die Szenen.');
+  const enc = (smp) => fmt === 'mp3' ? mp3Blob(smp, tl.sr, +S.settings.mp3Br) : Promise.resolve(wavBlob(smp, tl.sr));
+  if ($('#expFull').checked) files.push(new File([await enc(tl.samples)], `${base}.${fmt}`, { type: fmt === 'mp3' ? 'audio/mpeg' : 'audio/wav' }));
+  if ($('#expSrt').checked) files.push(new File([buildSrt(tl, lang)], `${base}.srt`, { type: 'application/x-subrip' }));
+  if ($('#expScenes').checked) {
+    if (!window.JSZip) throw new UserError('ZIP nicht verfügbar', 'Lade die Seite neu.');
+    const zip = new JSZip(); let i = 0;
+    for (const seg of tl.segs) { i++; const smp = tl.samples.subarray(Math.round(seg.start * tl.sr), Math.round(seg.end * tl.sr)); zip.file(`${base}_szene${String(i).padStart(2, '0')}.${fmt}`, await enc(smp)); }
+    files.push(new File([await zip.generateAsync({ type: 'blob' })], `${base}_szenen.zip`, { type: 'application/zip' }));
+  }
+  if (!files.length) throw new UserError('Nichts ausgewählt', 'Wähl mindestens eine Datei.');
+  return files;
+}
+
+/* ============================== Rendering ============================== */
+function sceneEl(id) { return $(`.scene[data-id="${id}"]`); }
+function autoGrow(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; }
+function renderHeader() {
+  $('#projName').textContent = S.project ? S.project.name : 'Projekt';
+  $$('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === S.lang)));
+  $('#keyNote').hidden = !!(S.settings.apiKey || '').trim();
+}
+function moodOptions(sel) { return Object.entries(MOODS).map(([k, v]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${v.label}</option>`).join(''); }
+function renderScenes() {
+  const list = $('#sceneList'); const lang = S.lang; const other = lang === 'de' ? 'tr' : 'de';
+  if (!S.project.scenes.length) {
+    list.innerHTML = `<div class="card empty"><h2>Noch keine Szenen</h2><p class="hint">Füg im Tab „Skript“ einen Text ein, lass die KI ein Skript schreiben oder tippe unten auf „+ Szene“.</p><button class="btn primary" type="button" data-goto="script">Zum Skript</button></div>`;
+    return;
+  }
+  list.innerHTML = S.project.scenes.map((sc, i) => `
+    <article class="scene" data-id="${sc.id}">
+      <div class="scene-head">
+        <span class="num">${String(i + 1).padStart(2, '0')}</span>
+        <select class="mood" aria-label="Stimmung">${moodOptions(sc.mood)}</select>
+        <span class="grow"></span>
+        <span class="chip state"></span>
+        <button class="iconbtn more" type="button" aria-label="Mehr">⋯</button>
+      </div>
+      <textarea class="text" rows="1" placeholder="${esc((sc.text[other] || '').trim() ? `Noch keine ${ADJ[lang]}e Fassung. Im Tab „Skript“ übersetzen oder hier schreiben.` : `${LANG_NAME[lang]}er Text dieser Szene`)}">${esc(sc.text[lang] || '')}</textarea>
+      <canvas class="wave" aria-hidden="true"></canvas>
+      <div class="scene-ctrl">
+        <button class="btn sm play" type="button" aria-label="Szene abspielen">▶</button>
+        <button class="btn sm regen" type="button">↻ Vertonen</button>
+        <button class="btn sm ghost undo" type="button" hidden>↶ Vorherige</button>
+        <label class="pause">Pause danach <input type="number" class="pz" min="0" max="5" step="0.1" value="${sc.pause}"> s</label>
+      </div>
+      <div class="menu" hidden>
+        <button class="btn sm" type="button" data-act="up">↑ Hoch</button>
+        <button class="btn sm" type="button" data-act="down">↓ Runter</button>
+        <button class="btn sm" type="button" data-act="split">Am Cursor teilen</button>
+        <button class="btn sm" type="button" data-act="merge">Mit nächster verbinden</button>
+        <button class="btn sm" type="button" data-act="dup">Duplizieren</button>
+        <button class="btn sm danger" type="button" data-act="del">Löschen</button>
+      </div>
+    </article>`).join('');
+  $$('.scene textarea', list).forEach(autoGrow);
+  renderSceneStates();
+}
+const busyIds = new Set();
+function markBusy(id, on) { on ? busyIds.add(id) : busyIds.delete(id); const el = sceneEl(id); if (el) paintState(el, S.project.scenes.find(s => s.id === id)); }
+function paintState(el, sc) {
+  if (!el || !sc) return; const lang = S.lang; const chip = $('.state', el); const take = sc.takes[lang];
+  let cls = 'chip state', label = 'neu';
+  if (busyIds.has(sc.id)) { cls += ' busy'; label = 'wird vertont …'; }
+  else if (!(sc.text[lang] || '').trim()) label = 'kein Text';
+  else if (take && take.sig !== sceneSig(sc, lang)) { cls += ' stale'; label = 'geändert'; }
+  else if (take && take.cut) { cls += ' cut'; label = 'Schnitt prüfen'; }
+  else if (take) { cls += ' ready'; label = '✓'; }
+  chip.className = cls; chip.textContent = label;
+  $('.play', el).disabled = !take; $('.regen', el).disabled = S.busy || !(sc.text[lang] || '').trim();
+  $('.undo', el).hidden = !sc.prev[lang];
+  drawWave(el, sc);
+}
+function renderSceneStates() { if (!S.project) return; S.project.scenes.forEach(sc => paintState(sceneEl(sc.id), sc)); }
+async function drawWave(el, sc) {
+  const cv = $('.wave', el); const take = sc.takes[S.lang];
+  if (!take) { cv.hidden = true; return; }
+  cv.hidden = false;
+  const y = await processed(sc, S.lang).catch(() => null); if (!y) return;
+  const dpr = window.devicePixelRatio || 1; const w = cv.clientWidth || 300, h = cv.clientHeight || 38;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const g = cv.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
+  const cs = getComputedStyle(document.documentElement);
+  const total = (y.length / S.settings.outSr); const maxSec = Math.max(total, 8);
+  const bars = Math.floor(w / 3); const used = Math.max(1, Math.round(bars * total / maxSec)); const per = y.length / used;
+  let mx = 1e-4; for (let i = 0; i < y.length; i += 64) mx = Math.max(mx, Math.abs(y[i]));
+  g.fillStyle = take.cut ? cs.getPropertyValue('--coral') : cs.getPropertyValue('--accent');
+  for (let b = 0; b < used; b++) { let p = 0; const s = Math.floor(b * per), e = Math.floor((b + 1) * per); for (let i = s; i < e; i += 8) { const a = Math.abs(y[i]); if (a > p) p = a; } const bh = Math.max(1.5, (p / mx) * (h - 4)); g.fillRect(b * 3, (h - bh) / 2, 2, bh); }
+  g.fillStyle = cs.getPropertyValue('--muted'); g.font = '11px ' + cs.getPropertyValue('--font-mono'); g.textAlign = 'right'; g.fillText(fmtTime(total), w - 2, h - 3);
+}
+async function refreshStatus() {
+  if (!S.project) return; const lang = S.lang; const n = S.project.scenes.length;
+  const ready = S.project.scenes.filter(sc => sc.takes[lang]).length;
+  let dur = '—', lu = '';
+  if (ready) { try { const tl = await timeline(lang); dur = fmtTime(tl.duration); lu = tl.lufs != null ? `${tl.lufs.toFixed(1).replace('.', ',')} LUFS` : ''; } catch { } }
+  const src = S.project.source ? `<span>Quelle: <b>${esc(S.project.source)}</b></span>` : '';
+  $('#statusline').innerHTML = `<span><b>${esc(S.settings.voice)}</b> · ${LANG_NAME[lang]}</span><span><b>${ready}/${n}</b> vertont</span><span>Länge <b class="mono">${dur}</b></span>${lu ? `<span><b class="mono">${lu}</b></span>` : ''}${src}`;
+}
+function updateActionbar() {
+  $('#genAll').disabled = S.busy; $('#genAll').textContent = S.busy ? 'Vertont …' : 'Alle vertonen';
+  if (S.busy) $$('.scene .regen').forEach(b => b.disabled = true);
+}
+function renderSound() {
+  const s = S.project.sound;
+  $('#sTempo').value = s.tempo; $('#oTempo').textContent = `${Math.round(s.tempo * 100)} %`;
+  $('#sPitch').value = s.pitch; $('#oPitch').textContent = `${s.pitch > 0 ? '+' : ''}${String(s.pitch).replace('.', ',')} HT`;
+  $('#sWarm').value = s.warmth; $('#oWarm').textContent = `+${String(s.warmth).replace('.', ',')} dB`;
+  $('#sBright').value = s.bright; $('#oBright').textContent = `${s.bright > 0 ? '+' : ''}${String(s.bright).replace('.', ',')} dB`;
+  $('#sLufs').value = String(s.lufs); $('#sComp').value = s.comp ? '1' : '0';
+}
+function renderSettings() {
+  const st = S.settings;
+  $('#apiKey').value = st.apiKey || '';
+  const vs = VOICES.some(v => v[0] === st.voice) ? VOICES : [[st.voice, 'm', 'eigene']].concat(VOICES);
+  $('#voice').innerHTML = `<optgroup label="Männlich">${vs.filter(v => v[1] === 'm').map(v => `<option value="${v[0]}">${v[0]} · ${v[2]}</option>`).join('')}</optgroup><optgroup label="Weiblich">${vs.filter(v => v[1] === 'w').map(v => `<option value="${v[0]}">${v[0]} · ${v[2]}</option>`).join('')}</optgroup>`;
+  $('#voice').value = st.voice;
+  $('#baseStyle').value = st.baseStyle;
+  const fill = (sel, list, cur) => { const all = Array.from(new Set([cur].concat(list || []))).filter(Boolean); sel.innerHTML = all.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join(''); sel.value = cur; };
+  fill($('#ttsModel'), S.models.tts, st.ttsModel); fill($('#textModel'), S.models.text, st.textModel);
+  $('#batch').value = st.batch ? '1' : '0'; $('#promptFormat').value = st.promptFormat;
+  $('#defPause').value = st.defPause; $('#outSr').value = String(st.outSr); $('#mp3Br').value = String(st.mp3Br);
+  renderUsage();
+}
+function renderDict() {
+  $('#dictList').innerHTML = S.dict.map(e => `
+    <div class="item" data-id="${e.id}">
+      <label class="f"><span>Begriff im Skript</span><input type="text" data-k="term" value="${esc(e.term)}" placeholder="z. B. Hadith"></label>
+      <div class="row">
+        <label class="f"><span>Aussprache Deutsch</span><input type="text" data-k="de" value="${esc(e.de)}" placeholder="leer = unverändert"></label>
+        <label class="f"><span>Aussprache Türkisch</span><input type="text" data-k="tr" value="${esc(e.tr)}" placeholder="leer = unverändert"></label>
+      </div>
+      <div class="row"><button class="btn sm" type="button" data-act="test">▶ Testen (${LANG_NAME[S.lang]})</button><button class="btn sm danger" type="button" data-act="del">Entfernen</button></div>
+    </div>`).join('') || '<p class="hint">Noch keine Einträge.</p>';
+}
+function renderTpl() {
+  $('#tplList').innerHTML = S.tpl.map(t => `
+    <div class="item" data-id="${t.id}">
+      <div class="row">
+        <label class="f"><span>Name</span><input type="text" data-k="name" value="${esc(t.name)}"></label>
+        <label class="f"><span>Art</span><select data-k="kind"><option value="intro"${t.kind === 'intro' ? ' selected' : ''}>Intro</option><option value="outro"${t.kind === 'outro' ? ' selected' : ''}>Outro</option></select></label>
+      </div>
+      <label class="f"><span>Deutsch</span><input type="text" data-k="de" value="${esc(t.de)}"></label>
+      <label class="f"><span>Türkisch</span><input type="text" data-k="tr" value="${esc(t.tr)}"></label>
+      <div class="row"><button class="btn sm danger" type="button" data-act="del">Entfernen</button></div>
+    </div>`).join('') || '<p class="hint">Noch keine Vorlagen.</p>';
+}
+function renderScriptTab() {
+  const lang = S.lang, other = lang === 'de' ? 'tr' : 'de';
+  $('#rawLangHint').textContent = `Wird als ${LANG_NAME[lang]} gespeichert (oben umschaltbar).`;
+  $('#trHint').textContent = `Übersetzt alle Szenen von ${LANG_NAME[lang]} nach ${LANG_NAME[other]}. Fachbegriffe wie „Peygamber Efendimiz“ oder „Friede sei mit ihm“ werden passend übertragen.`;
+  $('#trBtn').textContent = `${lang.toUpperCase()} → ${other.toUpperCase()} übersetzen`;
+}
+function setTab(tab) {
+  S.tab = tab; $$('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+  ['scenes', 'script', 'dict', 'settings'].forEach(t => $('#view-' + t).hidden = t !== tab);
+  if (tab === 'script') renderScriptTab(); if (tab === 'dict') renderDict(); if (tab === 'settings') renderSettings();
+  window.scrollTo({ top: 0 });
+}
+function renderAll() { renderHeader(); renderSound(); renderScenes(); refreshStatus(); updateActionbar(); if (S.tab !== 'scenes') setTab(S.tab); }
+
+/* ============================== Projects ============================== */
+async function openProject(id) {
+  const p = await DB.get(id); if (!p) return false;
+  stopPlay(); S.project = p; store.set('current', id); cache.clear(); tlCache = { key: '', tl: null }; renderAll(); return true;
+}
+async function renderProjList() {
+  const all = (await DB.all()).sort((a, b) => b.updatedAt - a.updatedAt);
+  $('#projRename').value = S.project.name;
+  $('#projList').innerHTML = all.map(p => `
+    <div class="pitem${p.id === S.project.id ? ' cur' : ''}" data-id="${p.id}">
+      <div class="meta"><b>${esc(p.name)}</b><span class="small muted">${p.scenes.length} Szenen · ${new Date(p.updatedAt).toLocaleDateString('de-DE')}</span></div>
+      <div class="row" style="flex-wrap:nowrap">${p.id === S.project.id ? '<span class="chip ready">offen</span>' : '<button class="btn sm" type="button" data-act="open">Öffnen</button>'}<button class="btn sm danger" type="button" data-act="del">Löschen</button></div>
+    </div>`).join('');
+}
+
+/* ============================== Events ============================== */
+function bind() {
+  // tabs & language
+  $$('.tabs button').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+  document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) setTab(g.dataset.goto); });
+  $$('.seg button').forEach(b => b.onclick = () => { S.lang = b.dataset.lang; store.set('lang', S.lang); stopPlay(); renderHeader(); renderScenes(); refreshStatus(); if (S.tab === 'script') renderScriptTab(); if (S.tab === 'dict') renderDict(); });
+
+  // scene list (delegated)
+  const list = $('#sceneList');
+  list.addEventListener('input', e => {
+    const el = e.target.closest('.scene'); if (!el) return; const sc = S.project.scenes.find(s => s.id === el.dataset.id);
+    if (e.target.matches('textarea.text')) { sc.text[S.lang] = e.target.value; autoGrow(e.target); paintState(el, sc); saveProject(); }
+    if (e.target.matches('.pz')) { sc.pause = Math.max(0, Math.min(5, parseFloat(String(e.target.value).replace(',', '.')) || 0)); saveProject(); refreshStatus(); }
+  });
+  list.addEventListener('change', e => {
+    const el = e.target.closest('.scene'); if (!el) return; const sc = S.project.scenes.find(s => s.id === el.dataset.id);
+    if (e.target.matches('.mood')) { sc.mood = e.target.value; paintState(el, sc); saveProject(); }
+  });
+  list.addEventListener('click', async e => {
+    const el = e.target.closest('.scene'); if (!el) return; const idx = S.project.scenes.findIndex(s => s.id === el.dataset.id); const sc = S.project.scenes[idx];
+    if (e.target.closest('.play')) return playScene(sc);
+    if (e.target.closest('.regen')) return generate([sc], S.lang);
+    if (e.target.closest('.undo')) { const t = sc.takes[S.lang]; sc.takes[S.lang] = sc.prev[S.lang]; sc.prev[S.lang] = t; saveProject(); paintState(el, sc); refreshStatus(); toast('Version gewechselt', 'Tippe noch einmal auf „↶“, um zurückzuwechseln.'); return; }
+    if (e.target.closest('.more')) { const m = $('.menu', el); m.hidden = !m.hidden; return; }
+    const act = e.target.closest('[data-act]'); if (!act) return; const a = act.dataset.act; const sc2 = S.project.scenes;
+    if (a === 'up' && idx > 0) [sc2[idx - 1], sc2[idx]] = [sc2[idx], sc2[idx - 1]];
+    else if (a === 'down' && idx < sc2.length - 1) [sc2[idx + 1], sc2[idx]] = [sc2[idx], sc2[idx + 1]];
+    else if (a === 'dup') { const c = JSON.parse(JSON.stringify({ text: sc.text, mood: sc.mood, pause: sc.pause })); sc2.splice(idx + 1, 0, Object.assign(newScene(), c)); }
+    else if (a === 'split') {
+      const ta = $('textarea', el); const pos = ta.selectionStart || 0; const t = sc.text[S.lang] || '';
+      if (pos <= 0 || pos >= t.length) { toast('Cursor setzen', 'Tippe in den Text an die Stelle, an der geteilt werden soll, und dann auf „Am Cursor teilen“.'); return; }
+      const ns = newScene(); ns.mood = sc.mood; ns.text[S.lang] = t.slice(pos).trim(); sc.text[S.lang] = t.slice(0, pos).trim(); sc2.splice(idx + 1, 0, ns);
+    }
+    else if (a === 'merge' && idx < sc2.length - 1) { const nx = sc2[idx + 1]; ['de', 'tr'].forEach(l => sc.text[l] = [sc.text[l], nx.text[l]].filter(x => (x || '').trim()).join(' ')); sc.pause = nx.pause; sc2.splice(idx + 1, 1); }
+    else if (a === 'del') {
+      if (act.dataset.sure !== '1') { act.dataset.sure = '1'; act.textContent = 'Wirklich löschen?'; setTimeout(() => { if (act.isConnected) { act.dataset.sure = ''; act.textContent = 'Löschen'; } }, 4000); return; }
+      sc2.splice(idx, 1);
+    } else return;
+    saveProject(); renderScenes(); refreshStatus();
+  });
+  function addScene(text) { const sc = newScene(); if (text) { sc.text.de = text.de; sc.text.tr = text.tr; } return sc; }
+  $('#addScene').onclick = () => { S.project.scenes.push(addScene()); saveProject(); renderScenes(); refreshStatus(); const last = $('#sceneList .scene:last-child textarea'); last && last.focus(); };
+  $('#addIntro').onclick = () => { const t = S.tpl.find(x => x.kind === 'intro'); if (!t) { toast('Keine Intro-Vorlage', 'Leg im Tab „Skript“ eine an.'); return; } S.project.scenes.unshift(addScene(t)); saveProject(); renderScenes(); refreshStatus(); };
+  $('#addOutro').onclick = () => { const outs = S.tpl.filter(x => x.kind === 'outro'); if (!outs.length) { toast('Keine Outro-Vorlage', 'Leg im Tab „Skript“ eine an.'); return; } if (outs.length === 1) { S.project.scenes.push(addScene(outs[0])); saveProject(); renderScenes(); refreshStatus(); return; } toast('Welches Outro?', '', { actions: outs.map(o => [o.name, () => { S.project.scenes.push(addScene(o)); saveProject(); renderScenes(); refreshStatus(); }]) }); };
+
+  // sound
+  const snd = (id, k, conv) => $(id).addEventListener('input', e => { S.project.sound[k] = conv(e.target.value); renderSound(); saveProject(); scheduleRefresh(); });
+  snd('#sTempo', 'tempo', parseFloat); snd('#sPitch', 'pitch', parseFloat); snd('#sWarm', 'warmth', parseFloat); snd('#sBright', 'bright', parseFloat);
+  $('#sLufs').onchange = e => { S.project.sound.lufs = +e.target.value; saveProject(); scheduleRefresh(); };
+  $('#sComp').onchange = e => { S.project.sound.comp = e.target.value === '1'; saveProject(); scheduleRefresh(); };
+
+  // action bar
+  $('#genAll').onclick = genAll;
+  $('#playAll').onclick = () => playAll().catch(showError);
+  $('#exportBtn').onclick = openExport;
+
+  // script tab
+  const splitText = (raw, mode) => {
+    const paras = raw.replace(/\r/g, '').split(/\n\s*\n/).map(s => s.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean);
+    if (mode === 'para' && paras.length > 1) return paras;
+    const sents = raw.replace(/\s+/g, ' ').trim().split(/(?<=[.!?…])\s+(?=[„“"«(\p{Lu}\p{N}])/u).filter(Boolean); const out = [];
+    for (const s of sents) { if (out.length && out[out.length - 1].length < 28) out[out.length - 1] += ' ' + s; else out.push(s); }
+    return out;
+  };
+  const takeScript = (replace) => {
+    const raw = $('#rawScript').value.trim(); if (!raw) { toast('Kein Text', 'Füg zuerst dein Skript ein.'); return; }
+    const parts = splitText(raw, $('#splitMode').value); const lang = S.lang;
+    const scenes = parts.map(t => { const sc = newScene(); sc.text[lang] = t; return sc; });
+    if (replace) S.project.scenes = scenes; else S.project.scenes.push(...scenes);
+    saveProject(); renderScenes(); refreshStatus(); setTab('scenes');
+    toast(`${parts.length} Szenen übernommen`, `Als ${LANG_NAME[lang]}. Für die andere Sprache: Tab „Skript“ → Übersetzen.`);
+  };
+  $('#splitReplace').onclick = () => takeScript(true);
+  $('#splitAppend').onclick = () => takeScript(false);
+  $('#trBtn').onclick = translateAll;
+  $('#aiBtn').onclick = aiScript;
+  $('#tplAdd').onclick = () => { S.tpl.push({ id: uid(), kind: 'outro', name: 'Neue Vorlage', de: '', tr: '' }); saveTpl(); renderTpl(); };
+  $('#tplList').addEventListener('input', e => { const it = e.target.closest('.item'); const t = S.tpl.find(x => x.id === it.dataset.id); const k = e.target.dataset.k; if (t && k) { t[k] = e.target.value; saveTpl(); } });
+  $('#tplList').addEventListener('click', e => { const b = e.target.closest('[data-act="del"]'); if (!b) return; const it = e.target.closest('.item'); S.tpl = S.tpl.filter(x => x.id !== it.dataset.id); saveTpl(); renderTpl(); });
+
+  // dictionary
+  $('#dictAdd').onclick = () => { S.dict.push({ id: uid(), term: '', de: '', tr: '' }); saveDict(); renderDict(); const ins = $$('#dictList input[data-k="term"]'); ins.length && ins[ins.length - 1].focus(); };
+  $('#dictList').addEventListener('input', e => { const it = e.target.closest('.item'); const d = S.dict.find(x => x.id === it.dataset.id); const k = e.target.dataset.k; if (d && k) { d[k] = e.target.value; saveDict(); renderSceneStates(); } });
+  $('#dictList').addEventListener('click', async e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const it = e.target.closest('.item'); const d = S.dict.find(x => x.id === it.dataset.id);
+    if (b.dataset.act === 'del') { S.dict = S.dict.filter(x => x.id !== d.id); saveDict(); renderDict(); renderSceneStates(); return; }
+    if (b.dataset.act === 'test') {
+      const word = (d[S.lang] || d.term || '').trim(); if (!word) return;
+      b.disabled = true; b.textContent = 'Lädt …';
+      try { const a = await ttsCall(S.lang === 'de' ? `Er sagte: ${word}.` : `Şöyle dedi: ${word}.`, direction('ruhig', S.lang, false)); playSamples(trimSilence(a.samples, a.sr), a.sr); }
+      catch (err) { showError(err); } finally { b.disabled = false; b.textContent = `▶ Testen (${LANG_NAME[S.lang]})`; }
+    }
+  });
+
+  // settings
+  const setS = (k, v) => { S.settings[k] = v; saveSettings(); };
+  $('#apiKey').addEventListener('input', e => { setS('apiKey', e.target.value.trim()); renderHeader(); });
+  $('#keyShow').onclick = () => { const i = $('#apiKey'); const show = i.type === 'password'; i.type = show ? 'text' : 'password'; $('#keyShow').textContent = show ? 'Verbergen' : 'Zeigen'; };
+  $('#keyTest').onclick = async () => {
+    const st = $('#keyStatus'); st.textContent = 'Prüfe …';
+    try {
+      const m = await listModels(); S.models = m; store.set('models', m);
+      if (m.tts.length && !m.tts.includes(S.settings.ttsModel)) { const pick = m.tts.find(n => /3\.8.*flash-tts$/.test(n)) || m.tts.find(n => /flash.*tts/.test(n) && !/lite/.test(n)) || m.tts[0]; setS('ttsModel', pick); }
+      if (m.text.length && !m.text.includes(S.settings.textModel)) { const pick = m.text.find(n => n === 'gemini-flash-latest') || m.text.find(n => /flash-lite/.test(n)) || m.text.find(n => /flash/.test(n)) || m.text[0]; setS('textModel', pick); }
+      renderSettings(); st.textContent = `✓ Schlüssel funktioniert · ${m.tts.length} Sprachmodelle, ${m.text.length} Textmodelle`;
+      renderSceneStates();
+    } catch (e) { st.textContent = ''; showError(e); }
+  };
+  $('#voice').onchange = e => { setS('voice', e.target.value); renderSceneStates(); refreshStatus(); };
+  $('#baseStyle').addEventListener('input', e => { setS('baseStyle', e.target.value); renderSceneStates(); });
+  $('#styleReset').onclick = () => { setS('baseStyle', DEFAULT_STYLE); $('#baseStyle').value = DEFAULT_STYLE; renderSceneStates(); };
+  $('#ttsModel').onchange = e => { setS('ttsModel', e.target.value); renderSceneStates(); };
+  $('#textModel').onchange = e => setS('textModel', e.target.value);
+  $('#batch').onchange = e => setS('batch', e.target.value === '1');
+  $('#promptFormat').onchange = e => { setS('promptFormat', e.target.value); renderSceneStates(); };
+  $('#defPause').onchange = e => setS('defPause', Math.max(0, Math.min(5, parseFloat(String(e.target.value).replace(',', '.')) || 0)));
+  $('#outSr').onchange = e => { setS('outSr', +e.target.value); cache.clear(); scheduleRefresh(); };
+  $('#mp3Br').onchange = e => setS('mp3Br', +e.target.value);
+  $('#backupBtn').onclick = () => {
+    const p = JSON.parse(JSON.stringify(S.project, (k, v) => (k === 'takes' || k === 'prev') ? { de: null, tr: null } : v));
+    download(new Blob([JSON.stringify({ app: 'sukun', v: 1, project: p }, null, 1)], { type: 'application/json' }), `${slug(S.project.name)}.sukun.json`);
+  };
+  $('#restoreBtn').onclick = () => $('#restoreFile').click();
+  $('#restoreFile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const j = JSON.parse(await f.text()); const p = j.project; if (!p || !Array.isArray(p.scenes)) throw new Error('Keine Sükûn-Projektdatei'); p.id = uid(); p.scenes.forEach(sc => { sc.id = uid(); sc.takes = { de: null, tr: null }; sc.prev = { de: null, tr: null }; }); await DB.put(p); await openProject(p.id); toast('Projekt geladen', p.name); setTab('scenes'); }
+    catch (err) { toast('Datei nicht lesbar', String(err.message || err), { err: true }); } finally { e.target.value = ''; }
+  };
+  $('#wipeBtn').onclick = async () => {
+    const b = $('#wipeBtn'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Wirklich alles löschen?'; $('#wipeHint').textContent = 'Löscht Projekte, Aufnahmen, Wörterbuch und Schlüssel auf diesem Gerät.'; return; }
+    await DB.clear(); try { Object.keys(localStorage).filter(k => k.startsWith('sukun.')).forEach(k => localStorage.removeItem(k)); } catch { } location.reload();
+  };
+
+  // project dialog
+  $('#projBtn').onclick = async () => { await renderProjList(); $('#projDlg').showModal(); };
+  $('#projRenameBtn').onclick = () => { const v = $('#projRename').value.trim(); if (!v) return; S.project.name = v; saveProject(true); renderHeader(); renderProjList(); };
+  $('#projNew').onclick = async () => { const p = newProject('Neues Projekt'); await DB.put(p); await openProject(p.id); $('#projDlg').close(); setTab('script'); };
+  $('#projDup').onclick = async () => { await saveProject(true); const p = structuredClone(S.project); p.id = uid(); p.name = S.project.name + ' (Kopie)'; p.createdAt = p.updatedAt = Date.now(); await DB.put(p); await openProject(p.id); renderProjList(); };
+  $('#projList').addEventListener('click', async e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const id = e.target.closest('.pitem').dataset.id;
+    if (b.dataset.act === 'open') { await saveProject(true); await openProject(id); $('#projDlg').close(); }
+    if (b.dataset.act === 'del') {
+      if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Sicher?'; return; }
+      await DB.del(id);
+      if (id === S.project.id) { const rest = (await DB.all()).sort((a, c) => c.updatedAt - a.updatedAt); if (rest.length) await openProject(rest[0].id); else { const p = newProject('Neues Projekt'); await DB.put(p); await openProject(p.id); } }
+      renderProjList();
+    }
+  });
+  $$('dialog [data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+  $$('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
+
+  // export dialog
+  $('#expDownload').onclick = async () => {
+    const b = $('#expDownload'); b.disabled = true; b.textContent = 'Erstelle …';
+    try { const files = await buildExportFiles(); for (const f of files) { download(f, f.name); await sleep(400); } toast('Export fertig', files.map(f => f.name).join(' · ')); }
+    catch (e) { showError(e); } finally { b.disabled = false; b.textContent = 'Herunterladen'; }
+  };
+  $('#expShare').onclick = async () => {
+    const b = $('#expShare'); b.disabled = true;
+    try { const files = await buildExportFiles(); if (navigator.canShare && navigator.canShare({ files })) await navigator.share({ files, title: S.project.name }); else { for (const f of files) download(f, f.name); } }
+    catch (e) { if (e && e.name !== 'AbortError') showError(e); } finally { b.disabled = false; }
+  };
+  window.addEventListener('resize', () => { clearTimeout(window.__rs); window.__rs = setTimeout(renderSceneStates, 200); });
+}
+let refreshT = null;
+function scheduleRefresh() { clearTimeout(refreshT); refreshT = setTimeout(() => { renderSceneStates(); refreshStatus(); }, 350); }
+
+async function openExport() {
+  stopPlay();
+  const lang = S.lang; const tl = await timeline(lang).catch(e => { showError(e); return null; }); if (!tl) return;
+  $('#expSummary').innerHTML = `<div><b>${fmtTime(tl.duration)}</b><span>Länge</span></div><div><b>${tl.segs.length}/${S.project.scenes.length}</b><span>Szenen</span></div><div><b>${tl.lufs != null ? tl.lufs.toFixed(1).replace('.', ',') : '—'}</b><span>LUFS</span></div>`;
+  const stale = S.project.scenes.filter(sc => sc.takes[lang] && sc.takes[lang].sig !== sceneSig(sc, lang)).length;
+  const warn = []; if (tl.missing) warn.push(`${tl.missing} Szene(n) ohne Aufnahme fehlen im Export.`); if (stale) warn.push(`${stale} Szene(n) wurden geändert, aber noch nicht neu vertont.`);
+  $('#expWarn').hidden = !warn.length; $('#expWarn').textContent = warn.join(' ');
+  $('#expShare').hidden = !(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.txt', { type: 'text/plain' })] }));
+  $('#exportDlg').showModal();
+}
+
+/* ============================== Translation & AI script ============================== */
+const TERMS = 'Türkisch: „Peygamber Efendimiz“ für den Propheten, „Allah“, „hadis“, „rahmet“, „kıyamet günü“, „cennet“, „sahabe“. Deutsch: „der Prophet, Friede sei mit ihm“, „Allah“, „Hadith“, „Barmherzigkeit“, „Tag der Auferstehung“, „Paradies“, „Gefährten“.';
+async function translateAll() {
+  const from = S.lang, to = from === 'de' ? 'tr' : 'de'; const over = $('#trOverwrite').checked;
+  const targets = S.project.scenes.filter(sc => (sc.text[from] || '').trim() && (over || !(sc.text[to] || '').trim()));
+  if (!targets.length) { toast('Nichts zu übersetzen', over ? `Keine Szene hat ${ADJ[from]}en Text.` : `Alle Szenen haben schon eine ${ADJ[to]}e Fassung. Setz das Häkchen zum Überschreiben.`); return; }
+  const b = $('#trBtn'); b.disabled = true; b.textContent = 'Übersetze …';
+  try {
+    const sys = `Du übersetzt Skripte für ruhige islamische Erinnerungs-Videos (Voice-over) von ${LANG_NAME[from]} nach ${LANG_NAME[to]}. Übersetze sinngetreu, natürlich gesprochen, ruhig und würdevoll. Behalte Satzzeichen für Pausen (… , .) bei. Schreib Zahlen als Wörter. Verwende die üblichen Begriffe: ${TERMS} Arabische Begriffe wie Subhanallah, Alhamdulillah, In sha Allah bleiben unverändert. Füge nichts hinzu und lass nichts weg. Gib genau so viele Szenen zurück, wie du bekommst, in derselben Reihenfolge. Antworte nur als JSON: {"szenen": ["…", "…"]}.`;
+    const j = await textCall(sys, JSON.stringify({ szenen: targets.map(sc => sc.text[from]) }));
+    const arr = Array.isArray(j) ? j : (j.szenen || j.scenes || []);
+    if (arr.length !== targets.length) throw new UserError('Übersetzung unvollständig', `Erwartet ${targets.length} Szenen, erhalten ${arr.length}. Versuch es noch einmal.`);
+    targets.forEach((sc, i) => sc.text[to] = String(arr[i] || '').trim());
+    saveProject(); toast('Übersetzt', `${targets.length} Szenen nach ${LANG_NAME[to]}. Zum Prüfen oben auf ${to.toUpperCase()} umschalten.`, { actions: [[`${to.toUpperCase()} ansehen`, () => { S.lang = to; store.set('lang', to); renderAll(); setTab('scenes'); }]] });
+    renderScenes();
+  } catch (e) { showError(e); } finally { b.disabled = false; renderScriptTab(); }
+}
+let aiLast = null;
+async function aiScript() {
+  const topic = $('#aiTopic').value.trim(); if (!topic) { toast('Thema fehlt', 'Beschreib kurz Thema oder Hadith.'); return; }
+  const lang = $('#aiLang').value, secs = +$('#aiLen').value, words = Math.round(secs * 1.9);
+  const keys = lang === 'both' ? '{"de": "…", "tr": "…"}' : `{"${lang}": "…"}`;
+  const sys = `Du schreibst Skripte für kurze, ruhige islamische Erinnerungs-Videos (YouTube Shorts, TikTok, Reels) mit Motion Graphics und tiefer, ruhiger Erzählerstimme. Stil: tiefgründig, warm, kurze Sätze, ein starker erster Satz als Hook, am Ende ein sanfter Aufruf (z. B. teilen). Jede Szene ist eine Einblendung im Video: ein bis zwei kurze Sätze.
+Regeln:
+- Nutze nur authentische, bekannte Hadithe aus anerkannten Sammlungen (Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa'i, Ibn Majah) oder Koranverse. Erfinde niemals Hadithe, Wortlaute oder Quellennummern.
+- Wenn du dir bei Quelle oder Nummer nicht sicher bist, setze "sicherheit" auf "unsicher" und schreib es in "hinweis".
+- Gib die Bedeutung korrekt wieder. Kein arabischer Text, nur Übersetzung. Zahlen als Wörter.
+- Begriffe: ${TERMS}
+- Länge insgesamt etwa ${words} Wörter pro Sprache.
+${lang === 'both' ? '- Deutsch und Türkisch sind inhaltlich gleich und Szene für Szene parallel.' : ''}
+Antworte nur als JSON: {"titel": "…", "szenen": [${keys}], "quelle": "Sammlung + Nummer", "sicherheit": "sicher" | "unsicher", "hinweis": "…"}`;
+  const b = $('#aiBtn'); b.disabled = true; b.textContent = 'Schreibe …';
+  try {
+    const j = await textCall(sys, topic);
+    const sc = (j.szenen || []).map(s => typeof s === 'string' ? { [lang === 'both' ? 'de' : lang]: s } : s).filter(s => s.de || s.tr);
+    if (!sc.length) throw new UserError('Kein Skript erhalten', 'Formulier das Thema etwas genauer und versuch es noch einmal.');
+    aiLast = { titel: j.titel || 'KI-Skript', szenen: sc, quelle: j.quelle || '', sicherheit: j.sicherheit || 'unsicher', hinweis: j.hinweis || '' };
+    const q = encodeURIComponent((aiLast.quelle || topic).slice(0, 120));
+    $('#aiResult').hidden = false;
+    $('#aiResult').innerHTML = `
+      <div class="note${aiLast.sicherheit === 'sicher' ? '' : ' warn'}"><b>Quelle: ${esc(aiLast.quelle || 'keine angegeben')}</b> · ${aiLast.sicherheit === 'sicher' ? 'laut KI sicher' : 'unsicher'}${aiLast.hinweis ? ' · ' + esc(aiLast.hinweis) : ''}<br>Prüf den Hadith vor dem Veröffentlichen, z. B. auf <a href="https://sunnah.com/search?q=${q}" target="_blank" rel="noopener" style="color:var(--accent)">sunnah.com</a>.</div>
+      <b>${esc(aiLast.titel)}</b>
+      <ol>${sc.map(s => `<li>${esc(s.de || s.tr)}${s.de && s.tr ? `<span>${esc(s.tr)}</span>` : ''}</li>`).join('')}</ol>
+      <div class="row"><button class="btn primary" type="button" id="aiNew">Als neues Projekt</button><button class="btn" type="button" id="aiAppend">An dieses Projekt anhängen</button></div>`;
+    const mk = () => aiLast.szenen.map(s => newScene(s.de || '', s.tr || ''));
+    $('#aiNew').onclick = async () => { const p = newProject(aiLast.titel, mk(), aiLast.quelle); await DB.put(p); await openProject(p.id); setTab('scenes'); toast('Projekt angelegt', aiLast.titel); };
+    $('#aiAppend').onclick = () => { S.project.scenes.push(...mk()); if (!S.project.source && aiLast.quelle) S.project.source = aiLast.quelle; saveProject(); renderScenes(); refreshStatus(); setTab('scenes'); };
+  } catch (e) { showError(e); } finally { b.disabled = false; b.textContent = 'Skript erstellen'; }
+}
+
+/* ============================== Boot ============================== */
+(async function boot() {
+  bind(); saveDict(); saveTpl(); renderTpl();
+  try {
+    const cur = store.get('current', null);
+    if (!(cur && await openProject(cur))) {
+      const all = (await DB.all()).sort((a, b) => b.updatedAt - a.updatedAt);
+      if (all.length) await openProject(all[0].id);
+      else { const p = newProject(SAMPLE.name, SAMPLE.scenes.map(([de, tr]) => newScene(de, tr)), SAMPLE.source); await DB.put(p); await openProject(p.id); }
+    }
+  } catch (e) {
+    S.project = newProject(SAMPLE.name, SAMPLE.scenes.map(([de, tr]) => newScene(de, tr)), SAMPLE.source); renderAll();
+    toast('Speicher nicht verfügbar', 'Projekte werden in diesem Browser nicht gespeichert (privater Modus?).', { err: true });
+  }
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+})();
+</script>
+</body>
+</html>
